@@ -1,10 +1,9 @@
 // src/components/Barista/Sales.js
 import { useState, useEffect, useCallback } from 'react';
-import { collection, getDocs, query, where, orderBy, onSnapshot, limit, startAfter } from 'firebase/firestore';
+import { collection, getDocs, query, where, orderBy, onSnapshot, limit } from 'firebase/firestore';
 import { db } from '../../firebase/config';
-import { 
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
-  PieChart, Pie, Cell, LineChart, Line
+import {
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
 } from 'recharts';
 import './Sales.css';
 
@@ -20,10 +19,6 @@ function Sales() {
   const [averageOrderValue, setAverageOrderValue] = useState(0);
   const [topSellingItems, setTopSellingItems] = useState([]);
   const [paymentMethodStats, setPaymentMethodStats] = useState({ cash: 0, qr: 0 });
-  const [salesByHour, setSalesByHour] = useState([]);
-  const [weeklySalesData, setWeeklySalesData] = useState([]);
-  const [monthlySalesData, setMonthlySalesData] = useState([]);
-  const [isListening, setIsListening] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [filterText, setFilterText] = useState('');
   const [itemsPerPage] = useState(10);
@@ -79,6 +74,7 @@ function Sales() {
   }, [activeTab]);
 
   // Clean up previous listener when tab changes
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     return () => {
       if (unsubscribe) {
@@ -86,8 +82,9 @@ function Sales() {
       }
     };
   }, [activeTab]);
-  
+
   // Setup data fetching when tab changes
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     setDataSourceLoading(true);
     setLoading(true);
@@ -185,116 +182,6 @@ function Sales() {
       .slice(0, 5);
     setTopSellingItems(topItems);
     
-    // Process time-specific data
-    if (activeTab === 'today') {
-      processDailyData(orders);
-    } else if (activeTab === 'week') {
-      processWeeklyData(orders);
-    } else if (activeTab === 'month') {
-      processMonthlyData(orders);
-    }
-  };
-  
-  // Process daily data (optimized)
-  const processDailyData = (orders) => {
-    const hourlyData = Array.from({ length: 24 }, (_, i) => ({ 
-      hour: i, 
-      sales: 0,
-      orders: 0
-    }));
-    
-    orders.forEach(order => {
-      if (order.timestamp) {
-        const hour = order.timestamp.getHours();
-        hourlyData[hour].sales += order.totalAmount || 0;
-        hourlyData[hour].orders += 1;
-      }
-    });
-    
-    setSalesByHour(hourlyData);
-  };
-  
-  // Process weekly data (optimized)
-  const processWeeklyData = (orders) => {
-    const { now } = getTimeRange();
-    
-    // Create an efficient date lookup map
-    const dateMap = new Map();
-    for (let i = 6; i >= 0; i--) {
-      const date = new Date(now);
-      date.setDate(date.getDate() - i);
-      date.setHours(0, 0, 0, 0);
-      
-      const dayStr = date.toLocaleDateString('en-US', { weekday: 'short' });
-      const dateKey = `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
-      
-      dateMap.set(dateKey, {
-        day: dayStr,
-        date: new Date(date),
-        sales: 0,
-        orders: 0
-      });
-    }
-    
-    // Process orders in a single pass
-    orders.forEach(order => {
-      if (order.timestamp) {
-        const orderDate = new Date(order.timestamp);
-        const dateKey = `${orderDate.getFullYear()}-${orderDate.getMonth()}-${orderDate.getDate()}`;
-        
-        const entry = dateMap.get(dateKey);
-        if (entry) {
-          entry.sales += order.totalAmount || 0;
-          entry.orders += 1;
-        }
-      }
-    });
-    
-    // Convert map to array preserving order
-    const weeklyData = Array.from(dateMap.values());
-    setWeeklySalesData(weeklyData);
-  };
-  
-  // Process monthly data (optimized)
-  const processMonthlyData = (orders) => {
-    // Group by date efficiently
-    const dateMap = new Map();
-    
-    orders.forEach(order => {
-      if (order.timestamp) {
-        const dateStr = order.timestamp.toLocaleDateString();
-        
-        if (dateMap.has(dateStr)) {
-          const entry = dateMap.get(dateStr);
-          entry.sales += order.totalAmount || 0;
-          entry.orders += 1;
-        } else {
-          dateMap.set(dateStr, {
-            date: new Date(order.timestamp),
-            sales: order.totalAmount || 0,
-            orders: 1
-          });
-        }
-      }
-    });
-    
-    // Convert map to array and sort by date
-    const monthlyData = Array.from(dateMap.values())
-      .sort((a, b) => a.date - b.date)
-      .map(entry => {
-        const dayStr = entry.date.toLocaleDateString('en-US', { 
-          month: 'short', 
-          day: 'numeric' 
-        });
-        
-        return {
-          day: dayStr,
-          sales: entry.sales,
-          orders: entry.orders
-        };
-      });
-    
-    setMonthlySalesData(monthlyData);
   };
 
   // Get all-time sales total
@@ -342,9 +229,6 @@ function Sales() {
   if (paymentMethodStats.unknown && paymentMethodStats.unknown > 0) {
     paymentMethodData.push({ name: 'Unknown', value: paymentMethodStats.unknown });
   }
-
-  // Generate colors for pie chart
-  const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
 
   return (
     <div className="sales-container">

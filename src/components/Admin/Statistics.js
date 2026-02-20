@@ -26,19 +26,10 @@ function Statistics() {
   const [hourlyData, setHourlyData] = useState([]);
   const [categoryBreakdown, setCategoryBreakdown] = useState([]);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     fetchSalesData();
   }, [timeRange]);
-
-  // Helper function to normalize payment methods
-  const normalizePaymentMethod = (method) => {
-    if (!method) return 'unknown';
-    
-    const normalizedMethod = String(method).toLowerCase().trim();
-    if (normalizedMethod === 'cash') return 'cash';
-    if (normalizedMethod === 'qr') return 'qr';
-    return 'unknown';
-  };
 
   async function fetchSalesData() {
     setLoading(true);
@@ -345,13 +336,6 @@ if (itemNameLower.includes('coffee') || itemNameLower.includes('latte') ||
 
   // Custom tooltip formatter for currency values
   const currencyFormatter = (value) => `RM${value.toFixed(2)}`;
-
-  // Helper function to get display text for payment method
-  const getPaymentMethodDisplay = (method) => {
-    if (method === 'cash') return 'Cash';
-    if (method === 'qr') return 'QR Payment';
-    return 'Unknown';
-  };
 
   return (
     <div className="statistics">

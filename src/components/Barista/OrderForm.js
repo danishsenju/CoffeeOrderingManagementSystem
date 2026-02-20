@@ -1,5 +1,5 @@
 // src/components/Barista/OrderForm.js
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { Coffee, Flame, Snowflake, ShoppingCart, Banknote, Smartphone, Lock, Sun, X, ChevronLeft } from 'lucide-react';
 import { collection, getDocs, addDoc, doc, updateDoc, getDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../../firebase/config';
@@ -9,9 +9,8 @@ import './OrderForm.css';
 
 function OrderForm() {
   // Get order state and functions from context
-  const { 
-    activeOrders, 
-    displayedOrders, 
+  const {
+    displayedOrders,
     addOrder,
     updateItemStatus: contextUpdateItemStatus,
     completeOrder,
@@ -28,7 +27,6 @@ function OrderForm() {
   const [customerName, setCustomerName] = useState('');
   const [showPayment, setShowPayment] = useState(false);
   const [orderTotal, setOrderTotal] = useState(0);
-  const [orderCompleted, setOrderCompleted] = useState(false);
   const [orderId, setOrderId] = useState(null);
   const [activeCategory, setActiveCategory] = useState('all');
   const [paymentMethod, setPaymentMethod] = useState('qr'); // Default payment method is QR
@@ -36,8 +34,6 @@ function OrderForm() {
   const [qrBrightness, setQrBrightness] = useState(1);
   const [customerGender, setCustomerGender] = useState('');
 
-  const topBarRef = useRef(null);
-  const progressBarRef = useRef(null);
   useEffect(() => {
     // Fetch menu items from Firestore
     fetchMenuItems();
@@ -366,11 +362,9 @@ function OrderForm() {
     setCustomerGender('');
     setOrderTotal(0);
     setShowPayment(false);
-    setOrderCompleted(true);
     setSuccess(`Order successfully completed with ${validPaymentMethod === 'cash' ? 'Cash' : 'QR'} payment!`);
-    
+
     setTimeout(() => {
-      setOrderCompleted(false);
       setSuccess('');
       setOrderId(null);
     }, 3000);
