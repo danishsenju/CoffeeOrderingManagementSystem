@@ -26,10 +26,9 @@ function Statistics() {
   const [hourlyData, setHourlyData] = useState([]);
   const [categoryBreakdown, setCategoryBreakdown] = useState([]);
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     fetchSalesData();
-  }, [timeRange]);
+  }, [timeRange]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function fetchSalesData() {
     setLoading(true);

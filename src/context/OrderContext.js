@@ -52,16 +52,15 @@ export function OrderProvider({ children }) {
   }, []);
 
   // Save active orders to localStorage whenever they change
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (activeOrders.length > 0) {
       localStorage.setItem('activeOrders', JSON.stringify(activeOrders));
       console.log('Saved active orders to localStorage:', activeOrders);
-      
+
       // Update displayed orders
       updateDisplayedOrders();
     }
-  }, [activeOrders]);
+  }, [activeOrders]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Save completed orders to localStorage
   useEffect(() => {

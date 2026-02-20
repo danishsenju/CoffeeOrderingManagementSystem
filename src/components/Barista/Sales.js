@@ -74,17 +74,15 @@ function Sales() {
   }, [activeTab]);
 
   // Clean up previous listener when tab changes
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     return () => {
       if (unsubscribe) {
         unsubscribe();
       }
     };
-  }, [activeTab]);
+  }, [activeTab]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Setup data fetching when tab changes
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     setDataSourceLoading(true);
     setLoading(true);
@@ -136,7 +134,7 @@ function Sales() {
     });
     
     setUnsubscribe(() => listener);
-  }, [activeTab]);
+  }, [activeTab]); // eslint-disable-line react-hooks/exhaustive-deps
   
   // Process all sales data at once
   const processSalesData = (orders) => {
