@@ -1,6 +1,6 @@
 {
-  "short_name": "MauKoffie",
-  "name": "MauKoffie Ordering System",
+  "short_name": "Matchalalu",
+  "name": "Matchalalu",
   "icons": [
     {
       "src": "favicon.ico",
@@ -29,7 +29,7 @@
   "start_url": ".",
   "display": "standalone",
   "orientation": "portrait",
-  "theme_color": "#4a2c2a",
-  "background_color": "#ffffff",
-  "description": "MauKoffie – Coffee ordering and management system for baristas and admins."
+  "theme_color": "#2d5a3d",
+  "background_color": "#f5fbf7",
+  "description": "Matchalalu – Coffee ordering and management system for baristas and admins."
 }
