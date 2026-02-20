@@ -1,8 +1,10 @@
 // src/components/Admin/Statistics.js
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { collection, getDocs, query, where, orderBy } from 'firebase/firestore';
 import { db } from '../../firebase/config';
-import { 
+import { CalendarDays } from 'lucide-react';
+import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
   PieChart, Pie, Cell, LineChart, Line, AreaChart, Area
 } from 'recharts';
@@ -82,16 +84,18 @@ function Statistics() {
         }
       });
       
-      const orders = ordersSnapshot.docs.map(doc => {
-        const data = doc.data();
-        return {
-          id: doc.id,
-          ...data,
-          // Force payment method processing here
-          paymentMethod: processPaymentMethod(data.paymentMethod),
-          timestamp: data.timestamp?.toDate() // Convert Firebase timestamp to JS Date
-        };
-      });
+      // Only include orders where payment has been completed (paymentMethod is set)
+      const orders = ordersSnapshot.docs
+        .filter(doc => doc.data().paymentMethod === 'cash' || doc.data().paymentMethod === 'qr')
+        .map(doc => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            ...data,
+            paymentMethod: processPaymentMethod(data.paymentMethod),
+            timestamp: data.timestamp?.toDate()
+          };
+        });
       
       // Log processed data
       console.log("Processed order data (first 3):");
@@ -308,54 +312,10 @@ if (itemNameLower.includes('coffee') || itemNameLower.includes('latte') ||
   
   // Helper function to process payment method consistently
   function processPaymentMethod(method) {
-    // Log the incoming value to understand what we're dealing with
-    console.log("Processing payment method:", method, typeof method);
-    
-    // Handle null, undefined
-    if (method === null || method === undefined) {
-      console.log("  - Null/undefined payment method, returning 'unknown'");
-      return 'unknown';
-    }
-    
-    // Handle various types
-    if (typeof method === 'string') {
-      const normalized = method.toLowerCase().trim();
-      console.log("  - Normalized string payment method:", normalized);
-      
-      if (normalized === 'cash') return 'cash';
-      if (normalized === 'qr') return 'qr';
-      // Anything else is unknown
-      return 'unknown';
-    }
-    
-    // Handle unexpected types
-    console.log("  - Unexpected payment method type, returning 'unknown'");
-    return 'unknown';
-  }
-
-  function processPaymentMethod(method) {
-    // Log the incoming value to understand what we're dealing with
-    console.log("Processing payment method:", method, typeof method);
-    
-    // Handle null, undefined
-    if (method === null || method === undefined) {
-      console.log("  - Null/undefined payment method, returning 'unknown'");
-      return 'unknown';
-    }
-    
-    // Handle various types
-    if (typeof method === 'string') {
-      const normalized = method.toLowerCase().trim();
-      console.log("  - Normalized string payment method:", normalized);
-      
-      if (normalized === 'cash') return 'cash';
-      if (normalized === 'qr') return 'qr';
-      // Anything else is unknown
-      return 'unknown';
-    }
-    
-    // Handle unexpected types
-    console.log("  - Unexpected payment method type, returning 'unknown'");
+    if (!method) return 'unknown';
+    const normalized = String(method).toLowerCase().trim();
+    if (normalized === 'cash') return 'cash';
+    if (normalized === 'qr') return 'qr';
     return 'unknown';
   }
 
@@ -396,7 +356,6 @@ if (itemNameLower.includes('coffee') || itemNameLower.includes('latte') ||
   return (
     <div className="statistics">
       <div className="statistics-header">
-        <h2>Sales Analytics Dashboard</h2>
         <div className="time-range-selector">
           <button 
             className={`time-range-btn ${timeRange === 'day' ? 'active' : ''}`} 
@@ -472,6 +431,18 @@ if (itemNameLower.includes('coffee') || itemNameLower.includes('latte') ||
               </div>
             </div>
           </div>
+
+          {/* Calendar banner */}
+          <Link to="/admin/calendar" className="stats-calendar-banner">
+            <div className="stats-calendar-banner-left">
+              <CalendarDays size={22} />
+              <div>
+                <p className="stats-calendar-banner-title">Sales Calendar</p>
+                <p className="stats-calendar-banner-sub">View daily sales totals in a full calendar layout</p>
+              </div>
+            </div>
+            <span className="stats-calendar-banner-cta">Open Calendar →</span>
+          </Link>
 
           {/* Main Dashboard Charts */}
           <div className="charts-section">

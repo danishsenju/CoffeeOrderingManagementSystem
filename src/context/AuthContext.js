@@ -1,14 +1,22 @@
 // src/context/AuthContext.js
 import { createContext, useContext, useState, useEffect } from 'react';
-import { 
-  signInWithEmailAndPassword, 
-  signOut, 
-  onAuthStateChanged 
+import {
+  signInWithEmailAndPassword,
+  signOut,
+  onAuthStateChanged,
+  createUserWithEmailAndPassword,
 } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
-import { auth, db } from '../firebase/config';
+import { initializeApp, deleteApp } from 'firebase/app';
+import { getAuth } from 'firebase/auth';
+import {
+  doc, getDoc, setDoc, deleteDoc,
+  collection, getDocs, query, where, serverTimestamp,
+} from 'firebase/firestore';
+import { auth, db, firebaseConfig } from '../firebase/config';
 
 const AuthContext = createContext();
+
+const ADMIN_EMAIL = process.env.REACT_APP_ADMIN_EMAIL;
 
 export function useAuth() {
   return useContext(AuthContext);
@@ -16,54 +24,98 @@ export function useAuth() {
 
 export function AuthProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(null);
-  const [userRole, setUserRole] = useState(null);
-  const [loading, setLoading] = useState(true);
-  
-  async function login(email, password) {
-    return signInWithEmailAndPassword(auth, email, password)
-      .then(async (userCredential) => {
-        // Fetch user role from Firestore
-        const userDoc = await getDoc(doc(db, "users", userCredential.user.uid));
-        if (userDoc.exists()) {
-          setUserRole(userDoc.data().role);
-          return userDoc.data().role;
-        }
-        return null;
-      });
+  const [userRole, setUserRole]       = useState(null);
+  const [loading, setLoading]         = useState(true);
+
+  // ── Determine role from a Firebase user object ───────────────────────────
+  async function resolveRole(user) {
+    if (!user) return null;
+    // Admin identified by email in .env — no Firestore record needed
+    if (user.email === ADMIN_EMAIL) return 'admin';
+    // Baristas stored in Firestore at /users/{uid}
+    const snap = await getDoc(doc(db, 'users', user.uid));
+    return snap.exists() ? snap.data().role : null;
   }
-  
+
+  // ── Login ─────────────────────────────────────────────────────────────────
+  // Accepts full email (admin) or plain username (barista → appended with @maukoffie.barista)
+  async function login(emailOrUsername, password) {
+    const email = emailOrUsername.includes('@')
+      ? emailOrUsername
+      : `${emailOrUsername}@maukoffie.barista`;
+    const credential = await signInWithEmailAndPassword(auth, email, password);
+    const role = await resolveRole(credential.user);
+    setUserRole(role);
+    return role;
+  }
+
+  // ── Logout ────────────────────────────────────────────────────────────────
   function logout() {
-    return signOut(auth).then(() => {
-      setUserRole(null);
-    });
+    return signOut(auth).then(() => setUserRole(null));
   }
-  
+
+  // ── Create barista ────────────────────────────────────────────────────────
+  // Admin supplies a plain username; we construct a synthetic email for Firebase Auth.
+  // Uses a temporary secondary Firebase app so the admin stays signed in.
+  async function createBarista(username, password) {
+    const email = `${username}@maukoffie.barista`;
+    const tempApp  = initializeApp(firebaseConfig, `barista_reg_${Date.now()}`);
+    const tempAuth = getAuth(tempApp);
+    try {
+      const credential = await createUserWithEmailAndPassword(tempAuth, email, password);
+      const uid = credential.user.uid;
+      // Save barista record to Firestore
+      await setDoc(doc(db, 'users', uid), {
+        role:      'barista',
+        username:  username,
+        email:     email,
+        createdAt: serverTimestamp(),
+      });
+      return uid;
+    } finally {
+      await deleteApp(tempApp);
+    }
+  }
+
+  // ── List baristas from Firestore ──────────────────────────────────────────
+  async function getBaristas() {
+    const q = query(collection(db, 'users'), where('role', '==', 'barista'));
+    const snap = await getDocs(q);
+    return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  }
+
+  // ── Remove barista (revokes app access) ──────────────────────────────────
+  async function deleteBarista(uid) {
+    await deleteDoc(doc(db, 'users', uid));
+  }
+
+  // ── Auth state listener ───────────────────────────────────────────────────
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setCurrentUser(user);
-      
       if (user) {
-        const userDoc = await getDoc(doc(db, "users", user.uid));
-        if (userDoc.exists()) {
-          setUserRole(userDoc.data().role);
-        }
+        const role = await resolveRole(user);
+        setUserRole(role);
+      } else {
+        setUserRole(null);
       }
-      
       setLoading(false);
     });
-    
     return unsubscribe;
-  }, []);
-  
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   const value = {
     currentUser,
     userRole,
     login,
     logout,
-    isAdmin: userRole === 'admin',
-    isBarista: userRole === 'barista'
+    createBarista,
+    getBaristas,
+    deleteBarista,
+    isAdmin:   userRole === 'admin',
+    isBarista: userRole === 'barista',
   };
-  
+
   return (
     <AuthContext.Provider value={value}>
       {!loading && children}

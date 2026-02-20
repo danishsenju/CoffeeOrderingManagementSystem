@@ -1,6 +1,6 @@
 {
-  "short_name": "React App",
-  "name": "Create React App Sample",
+  "short_name": "MauKoffie",
+  "name": "MauKoffie Ordering System",
   "icons": [
     {
       "src": "favicon.ico",
@@ -8,18 +8,28 @@
       "type": "image/x-icon"
     },
     {
-      "src": "logo192.png",
+      "src": "app-icon.png",
       "type": "image/png",
-      "sizes": "192x192"
+      "sizes": "192x192",
+      "purpose": "any"
     },
     {
-      "src": "logo512.png",
+      "src": "app-icon.png",
       "type": "image/png",
-      "sizes": "512x512"
+      "sizes": "512x512",
+      "purpose": "any"
+    },
+    {
+      "src": "app-icon.png",
+      "type": "image/png",
+      "sizes": "any",
+      "purpose": "maskable"
     }
   ],
   "start_url": ".",
   "display": "standalone",
-  "theme_color": "#000000",
-  "background_color": "#ffffff"
+  "orientation": "portrait",
+  "theme_color": "#4a2c2a",
+  "background_color": "#ffffff",
+  "description": "MauKoffie – Coffee ordering and management system for baristas and admins."
 }

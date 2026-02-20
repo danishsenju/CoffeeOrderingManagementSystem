@@ -118,11 +118,14 @@ function Sales() {
     
     // Set up the listener
     const listener = onSnapshot(ordersQuery, (snapshot) => {
-      const updatedOrders = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        timestamp: doc.data().timestamp?.toDate()
-      }));
+      // Only include orders where payment has been completed
+      const updatedOrders = snapshot.docs
+        .filter(doc => doc.data().paymentMethod === 'cash' || doc.data().paymentMethod === 'qr')
+        .map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+          timestamp: doc.data().timestamp?.toDate()
+        }));
       
       setSalesData(updatedOrders);
       processSalesData(updatedOrders);
@@ -312,6 +315,8 @@ function Sales() {
       const totalSnapshot = await getDocs(totalQuery);
       const totalRevenue = totalSnapshot.docs.reduce((sum, doc) => {
         const data = doc.data();
+        // Only count paid orders
+        if (data.paymentMethod !== 'cash' && data.paymentMethod !== 'qr') return sum;
         return sum + (data.totalAmount || 0);
       }, 0);
       

@@ -1,7 +1,9 @@
 // src/components/Barista/OrderForm.js
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { Coffee, Flame, Snowflake, ShoppingCart, Banknote, Smartphone, Lock, Sun, X, ChevronLeft } from 'lucide-react';
 import { collection, getDocs, addDoc, doc, updateDoc, getDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../../firebase/config';
+import qrImage from '../../images/qrdanish.jpeg';
 import { useOrders } from '../../context/OrderContext'; // Import the orders context
 import './OrderForm.css';
 
@@ -30,7 +32,12 @@ function OrderForm() {
   const [orderId, setOrderId] = useState(null);
   const [activeCategory, setActiveCategory] = useState('all');
   const [paymentMethod, setPaymentMethod] = useState('qr'); // Default payment method is QR
+  const [qrFullscreen, setQrFullscreen] = useState(false);
+  const [qrBrightness, setQrBrightness] = useState(1);
+  const [customerGender, setCustomerGender] = useState('');
 
+  const topBarRef = useRef(null);
+  const progressBarRef = useRef(null);
   useEffect(() => {
     // Fetch menu items from Firestore
     fetchMenuItems();
@@ -266,6 +273,7 @@ function OrderForm() {
       // Create order in Firestore with improved category handling
       const orderRef = await addDoc(collection(db, 'orders'), {
         customerName: customerName.trim(),
+        customerGender: customerGender || null,
         items: orderItems.map(item => ({
           id: item.originalId || item.id,
           name: item.name,
@@ -285,6 +293,7 @@ function OrderForm() {
       const newOrder = {
         id: orderRef.id,
         customer: customerName.trim(),
+        gender: customerGender || null,
         items: orderItems.map(item => ({
           id: item.id,
           originalId: item.originalId || item.id,
@@ -354,6 +363,7 @@ function OrderForm() {
     // Reset current order form
     setOrderItems([]);
     setCustomerName('');
+    setCustomerGender('');
     setOrderTotal(0);
     setShowPayment(false);
     setOrderCompleted(true);
@@ -411,18 +421,18 @@ function OrderForm() {
         >
           {!isAvailable && (
             <div className="unavailable-overlay">
-              <span className="unavailable-icon">🔒</span>
+              <span className="unavailable-icon"><Lock size={20} /></span>
               <span className="unavailable-text">Not Available</span>
             </div>
           )}
           <div className="item-image">
-            <span className="coffee-icon">☕</span>
+            <span className="coffee-icon"><Coffee size={20} /></span>
           </div>
           <div className="item-info">
             <h5>{item.name}</h5>
           </div>
           <div className="temperature-options">
-            <button 
+            <button
               className="temp-button hot"
               onClick={(e) => {
                 e.stopPropagation();
@@ -430,9 +440,9 @@ function OrderForm() {
               }}
               disabled={!isAvailable}
             >
-              <span className="temp-icon">🔥</span>
+              <span className="temp-icon"><Flame size={16} /></span>
             </button>
-            <button 
+            <button
               className="temp-button cold"
               onClick={(e) => {
                 e.stopPropagation();
@@ -440,7 +450,7 @@ function OrderForm() {
               }}
               disabled={!isAvailable}
             >
-              <span className="temp-icon">❄️</span>
+              <span className="temp-icon"><Snowflake size={16} /></span>
             </button>
           </div>
         </div>
@@ -455,12 +465,12 @@ function OrderForm() {
         >
           {!isAvailable && (
             <div className="unavailable-overlay">
-              <span className="unavailable-icon">🔒</span>
+              <span className="unavailable-icon"><Lock size={20} /></span>
               <span className="unavailable-text">Not Available</span>
             </div>
           )}
           <div className="item-image">
-            <span className="coffee-icon">☕</span>
+            <span className="coffee-icon"><Coffee size={20} /></span>
           </div>
           <div className="item-info">
             <h5>{item.name}</h5>
@@ -490,15 +500,15 @@ function OrderForm() {
         <div className="order-tracking-container">
           {displayedOrders.length > 0 ? (
             displayedOrders.map(order => (
-              <div key={order.id} className="order-tracking">
+              <div key={order.id} className={`order-tracking order-gender-${order.gender || 'none'}`}>
                 <div className="order-tracking-header">
-                  <h4>Track Order: {order.customer}</h4>
+                  <h4>{order.customer}</h4>
                   {areAllItemsCompleted(order.id) && (
-                    <button 
+                    <button
                       className="serve-button small"
                       onClick={() => handleServeOrder(order.id)}
                     >
-                      Serve Order
+                      Serve
                     </button>
                   )}
                 </div>
@@ -537,16 +547,32 @@ function OrderForm() {
         </div>
         
         <div className="order-actions">
-          <div className="name-input">
-            <input
-              type="text"
-              value={customerName}
-              onChange={e => setCustomerName(e.target.value)}
-              placeholder="Customer name"
-              required
-            />
+          <div className="name-gender-row">
+            <div className="name-input">
+              <input
+                type="text"
+                value={customerName}
+                onChange={e => setCustomerName(e.target.value)}
+                placeholder="Customer name"
+                required
+              />
+            </div>
+            <div className="gender-toggle">
+              <button
+                type="button"
+                className={`gender-btn male ${customerGender === 'male' ? 'active' : ''}`}
+                onClick={() => setCustomerGender(customerGender === 'male' ? '' : 'male')}
+                title="Male"
+              >♂</button>
+              <button
+                type="button"
+                className={`gender-btn female ${customerGender === 'female' ? 'active' : ''}`}
+                onClick={() => setCustomerGender(customerGender === 'female' ? '' : 'female')}
+                title="Female"
+              >♀</button>
+            </div>
           </div>
-          <button 
+          <button
             className="checkout-button"
             onClick={handleCompleteOrder}
             disabled={orderItems.length === 0}
@@ -587,14 +613,14 @@ function OrderForm() {
                 className={`payment-option ${paymentMethod === 'cash' ? 'active' : ''}`}
                 onClick={() => handlePaymentMethodChange('cash')}
               >
-                <span className="payment-icon">💵</span>
+                <span className="payment-icon"><Banknote size={24} /></span>
                 <span className="payment-label">Cash</span>
               </button>
               <button 
                 className={`payment-option ${paymentMethod === 'qr' ? 'active' : ''}`}
                 onClick={() => handlePaymentMethodChange('qr')}
               >
-                <span className="payment-icon">📱</span>
+                <span className="payment-icon"><Smartphone size={24} /></span>
                 <span className="payment-label">QR Payment</span>
               </button>
             </div>
@@ -627,16 +653,20 @@ function OrderForm() {
                     <p>Please scan the QR code to complete payment</p>
                   </div>
                   <div className="qr-code">
-                    <div className="qr-placeholder">
-                      <span className="qr-icon">📱</span>
-                      <p>QR Code for Order #{orderId && orderId.substring(0, 8)}</p>
-                    </div>
+                    <img
+                      src={qrImage}
+                      alt="Payment QR Code"
+                      className="qr-image qr-image-clickable"
+                      onClick={() => setQrFullscreen(true)}
+                      title="Tap to view full screen"
+                    />
+                    <p className="qr-tap-hint">Tap image to enlarge</p>
                   </div>
                 </>
               ) : (
                 <div className="cash-payment">
                   <div className="cash-icon-container">
-                    <span className="cash-icon">💵</span>
+                    <span className="cash-icon"><Banknote size={40} /></span>
                   </div>
                   <div className="cash-instructions">
                     <p>Please collect RM{orderTotal.toFixed(2)} from the customer</p>
@@ -680,7 +710,7 @@ function OrderForm() {
               </div>
             ) : Object.keys(filteredMenuItems).length === 0 ? (
               <div className="empty-state">
-                <div className="empty-icon">☕</div>
+                <div className="empty-icon"><Coffee size={32} /></div>
                 <p>No menu items available in this category.</p>
               </div>
             ) : (
@@ -707,7 +737,7 @@ function OrderForm() {
             
             {orderItems.length === 0 ? (
               <div className="empty-cart">
-                <div className="empty-cart-icon">🛒</div>
+                <div className="empty-cart-icon"><ShoppingCart size={32} /></div>
                 <p>Your order is empty</p>
                 <p className="helper-text">Click on menu items to add them to the order</p>
               </div>
@@ -754,6 +784,51 @@ function OrderForm() {
                 </div>
               </>
             )}
+          </div>
+        </div>
+      )}
+      {/* QR Fullscreen Overlay */}
+      {qrFullscreen && (
+        <div className="qr-fullscreen-overlay">
+          <div className="qr-fullscreen-topbar">
+            <button
+              className="qr-back-btn"
+              onClick={() => { setQrFullscreen(false); setQrBrightness(1); }}
+            >
+              <ChevronLeft size={20} /> Back
+            </button>
+            <span className="qr-fullscreen-title">QR Payment</span>
+            <button
+              className="qr-close-btn"
+              onClick={() => { setQrFullscreen(false); setQrBrightness(1); }}
+            >
+              <X size={20} />
+            </button>
+          </div>
+
+          <div className="qr-fullscreen-body">
+            <img
+              src={qrImage}
+              alt="Payment QR Code"
+              className="qr-fullscreen-img"
+              style={{ filter: `brightness(${qrBrightness})` }}
+            />
+          </div>
+
+          <div className="qr-brightness-bar">
+            <Sun size={16} className="qr-sun-icon dim" />
+            <input
+              type="range"
+              min="1"
+              max="3"
+              step="0.1"
+              value={qrBrightness}
+              onChange={e => setQrBrightness(parseFloat(e.target.value))}
+              className="qr-brightness-slider"
+              aria-label="Brightness"
+            />
+            <Sun size={22} className="qr-sun-icon bright" />
+            <span className="qr-brightness-label">{Math.round((qrBrightness - 1) / 2 * 100)}%</span>
           </div>
         </div>
       )}

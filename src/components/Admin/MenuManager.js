@@ -1,5 +1,6 @@
 // src/components/Admin/MenuManager.js
 import { useState, useEffect } from 'react';
+import { Plus, Pencil, Trash2, UtensilsCrossed } from 'lucide-react';
 import { 
   collection, 
   getDocs, 
@@ -256,7 +257,7 @@ function MenuManager() {
             </div>
           </div>
           <button type="submit" className="add-button">
-            <span className="button-icon">+</span> Add to Menu
+            <Plus size={16} /> Add to Menu
           </button>
         </form>
       </div>
@@ -301,7 +302,7 @@ function MenuManager() {
           </div>
         ) : filteredItems.length === 0 ? (
           <div className="empty-state">
-            <div className="empty-icon">🍽️</div>
+            <div className="empty-icon"><UtensilsCrossed size={32} /></div>
             <p>No menu items{activeCategory !== 'all' ? ` in ${activeCategory} category` : ''}. Add some above!</p>
           </div>
         ) : (
@@ -408,11 +409,11 @@ function MenuManager() {
                         </td>
                         <td className="action-buttons">
                           <button onClick={() => startEditing(item)} className="edit-button">
-                            <span className="button-icon">✏️</span>
+                            <Pencil size={14} />
                             <span className="button-text">Edit</span>
                           </button>
                           <button onClick={() => handleDeleteItem(item.id, item.name)} className="delete-button">
-                            <span className="button-icon">🗑️</span>
+                            <Trash2 size={14} />
                             <span className="button-text">Delete</span>
                           </button>
                         </td>

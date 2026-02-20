@@ -1,7 +1,8 @@
-// In BaristaDashboard.js
+// src/pages/BaristaDashboard.js
 import { useState, useEffect } from 'react';
 import { Routes, Route, Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { ShoppingCart, BarChart2, LogOut, ChevronLeft, ChevronRight } from 'lucide-react';
 import OrderForm from '../components/Barista/OrderForm';
 import Sales from '../components/Barista/Sales';
 import './BaristaDashboard.css';
@@ -14,10 +15,8 @@ function BaristaDashboard() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // This useEffect ensures the active tab state stays in sync with the URL
   useEffect(() => {
-    const path = location.pathname;
-    if (path.includes('/sales')) {
+    if (location.pathname.includes('/sales')) {
       setActiveTab('sales');
     } else {
       setActiveTab('orders');
@@ -26,10 +25,8 @@ function BaristaDashboard() {
 
   async function handleLogout() {
     try {
-      // Clear localStorage when logging out to prevent data leakage
       localStorage.removeItem('activeOrders');
       localStorage.removeItem('completedOrders');
-      
       await logout();
       navigate('/login');
     } catch (error) {
@@ -37,51 +34,43 @@ function BaristaDashboard() {
     }
   }
 
-  // Toggle sidebar visibility
-  const toggleSidebar = () => {
-    setSidebarCollapsed(!sidebarCollapsed);
-  };
-
-  // Handler for tab navigation to ensure state is preserved
-  const handleTabChange = (tab) => {
-    setActiveTab(tab);
-  };
-
   return (
     <div className={`barista-dashboard ${sidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
+
+      {/* ── SIDEBAR (desktop) ── */}
       <aside className="sidebar">
-      <div className="brand-container">
+        <div className="brand-container">
           <div className="logo">
-            <img src={coffeeLogo} alt="Coffee Shop Logo" />
+            <img src={coffeeLogo} alt="MauKoffie" />
           </div>
-          <h1 className="brand-name">Mau Koffie</h1>
+          <span className="brand-name">Matchalalu</span>
         </div>
-        
+
         <nav className="sidebar-nav">
           <ul>
             <li>
-              <Link 
+              <Link
                 to="/barista/orders"
                 className={activeTab === 'orders' ? 'active' : ''}
-                onClick={() => handleTabChange('orders')}
+                onClick={() => setActiveTab('orders')}
               >
-                <span className="nav-icon">🛒</span>
+                <span className="nav-icon"><ShoppingCart size={18} /></span>
                 <span className="nav-text">Take Orders</span>
               </Link>
             </li>
             <li>
-              <Link 
+              <Link
                 to="/barista/sales"
                 className={activeTab === 'sales' ? 'active' : ''}
-                onClick={() => handleTabChange('sales')}
+                onClick={() => setActiveTab('sales')}
               >
-                <span className="nav-icon">📊</span>
+                <span className="nav-icon"><BarChart2 size={18} /></span>
                 <span className="nav-text">Today's Sales</span>
               </Link>
             </li>
           </ul>
         </nav>
-        
+
         <div className="user-section">
           <div className="user-info">
             <div className="user-avatar">
@@ -89,45 +78,70 @@ function BaristaDashboard() {
             </div>
             <div className="user-details">
               <p className="user-name">Barista</p>
-              <p className="user-email">{currentUser?.email || 'barista@coffee.com'}</p>
+              <p className="user-email">{currentUser?.email?.split('@')[0]}</p>
             </div>
           </div>
           <button onClick={handleLogout} className="logout-button">
-            <span className="logout-icon">🚪</span>
+            <span className="logout-icon"><LogOut size={18} /></span>
             <span>Logout</span>
           </button>
         </div>
-        
-        <button className="sidebar-toggle" onClick={toggleSidebar}>
-          {sidebarCollapsed ? '►' : '◄'}
+
+        <button
+          className="sidebar-toggle"
+          onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+        >
+          {sidebarCollapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
         </button>
       </aside>
-      
+
+      {/* ── MAIN CONTENT ── */}
       <main className="main-content">
         <header className="content-header">
           <h2 className="page-title">
-            {activeTab === 'orders' ? 'Take Orders' : 'Today\'s Sales'}
+            {activeTab === 'orders' ? 'Take Orders' : "Today's Sales"}
           </h2>
           <div className="header-actions">
             <div className="date-display">
-              {new Date().toLocaleDateString('en-US', { 
-                weekday: 'long', 
-                year: 'numeric', 
-                month: 'long', 
-                day: 'numeric' 
+              {new Date().toLocaleDateString('en-MY', {
+                weekday: 'short', year: 'numeric', month: 'short', day: 'numeric'
               })}
             </div>
           </div>
         </header>
-        
+
         <div className="content-container">
           <Routes>
-            <Route path="/" element={<OrderForm />} />
+            <Route path="/"       element={<OrderForm />} />
             <Route path="/orders" element={<OrderForm />} />
-            <Route path="/sales" element={<Sales />} />
+            <Route path="/sales"  element={<Sales />} />
           </Routes>
         </div>
       </main>
+
+      {/* ── MOBILE BOTTOM NAV ── */}
+      <nav className="mobile-bottom-nav">
+        <Link
+          to="/barista/orders"
+          className={`mobile-nav-item ${activeTab === 'orders' ? 'active' : ''}`}
+          onClick={() => setActiveTab('orders')}
+        >
+          <span className="mobile-nav-icon"><ShoppingCart size={20} /></span>
+          <span className="mobile-nav-label">Orders</span>
+        </Link>
+        <Link
+          to="/barista/sales"
+          className={`mobile-nav-item ${activeTab === 'sales' ? 'active' : ''}`}
+          onClick={() => setActiveTab('sales')}
+        >
+          <span className="mobile-nav-icon"><BarChart2 size={20} /></span>
+          <span className="mobile-nav-label">Sales</span>
+        </Link>
+        <button onClick={handleLogout} className="mobile-nav-item">
+          <span className="mobile-nav-icon"><LogOut size={20} /></span>
+          <span className="mobile-nav-label">Logout</span>
+        </button>
+      </nav>
     </div>
   );
 }
