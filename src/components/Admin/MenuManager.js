@@ -250,6 +250,10 @@ function MenuManager() {
               >
                 <option value="coffee">Coffee</option>
                 <option value="non-coffee">Non-Coffee</option>
+                <option value="food">Food</option>
+                <option value="dessert">Dessert</option>
+                <option value="tea">Tea</option>
+                <option value="other">Other</option>
               </select>
             </div>
             <div className="form-group">
@@ -397,6 +401,10 @@ function MenuManager() {
                           >
                             <option value="coffee">Coffee</option>
                             <option value="non-coffee">Non-Coffee</option>
+                            <option value="food">Food</option>
+                            <option value="dessert">Dessert</option>
+                            <option value="tea">Tea</option>
+                            <option value="other">Other</option>
                           </select>
                         </td>
                         <td>
