@@ -139,6 +139,32 @@
 .gender-btn.male.active  { background: #3b82f6; border-color: #2563eb; color: white; box-shadow: 0 2px 8px rgba(59,130,246,0.35); }
 .gender-btn.female.active { background: #ec4899; border-color: #db2777; color: white; box-shadow: 0 2px 8px rgba(236,72,153,0.35); }
 
+.tracking-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.remove-order-btn {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(239,68,68,0.12);
+  color: #b91c1c;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.remove-order-btn:hover {
+  background: rgba(239,68,68,0.22);
+  transform: scale(1.12);
+}
+
 .tracking-items {
   display: flex;
   flex-direction: column;
@@ -939,6 +965,7 @@
   margin-top: auto;
 }
 
+.cancel-order-button,
 .back-button,
 .complete-button {
   flex: 1;
@@ -950,6 +977,16 @@
   cursor: pointer;
   font-family: inherit;
   transition: all 0.2s ease;
+}
+
+.cancel-order-button {
+  background: rgba(239,68,68,0.10);
+  color: #b91c1c;
+  border: 1px solid rgba(239,68,68,0.20);
+}
+
+.cancel-order-button:hover {
+  background: rgba(239,68,68,0.18);
 }
 
 .back-button {
@@ -985,6 +1022,10 @@
 .payment-badge.cash { background: rgba(34,197,94,0.12); color: #166534; }
 .payment-badge.qr   { background: rgba(59,130,246,0.12); color: #1d4ed8; }
 
+/* ── Mobile-only elements: hidden on desktop ── */
+.mobile-cart-bar,
+.mobile-cart-backdrop { display: none; }
+
 /* ============================================
    RESPONSIVE
    ============================================ */
@@ -993,16 +1034,225 @@
   .payment-qr { order: -1; }
 }
 
-@media (max-width: 768px) {
-  .order-main-content { grid-template-columns: 1fr; }
-  .order-actions { width: 100%; }
-  .name-input input { width: 100%; }
-  .order-tracking-container { max-height: none; }
-}
+/* ============================================
+   MOBILE PORTRAIT  (≤ 767px)
+   Senior UX redesign: thumb-friendly, scannable
+   ============================================ */
+@media (max-width: 767px) {
 
-@media (max-width: 480px) {
-  .items-grid { grid-template-columns: repeat(2, 1fr); }
-  .payment-actions { flex-direction: column; }
+  /* ── Root gap ── */
+  .barista-order-form { gap: 10px; }
+
+  /* ── Top bar: compact — show only customer row ── */
+  .top-order-bar {
+    flex-direction: column;
+    gap: 0;
+    padding: 12px 14px;
+    border-radius: 14px;
+  }
+
+  /* Order info (count/total) is shown in the cart bar — hide here */
+  .order-info { display: none; }
+
+  /* Customer row comes first */
+  .order-actions {
+    order: -1;
+    width: 100%;
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .name-gender-row { flex: 1; }
+  .name-input input { width: 100%; }
+
+  /* Checkout btn is in the cart bar — hide the one in the top bar */
+  .top-order-bar .checkout-button { display: none; }
+
+  /* ── Tracking: compact, two cards max before scroll ── */
+  .order-tracking-container {
+    max-height: 180px;
+    margin-top: 10px;
+    border-top: 1px solid rgba(74,132,96,0.10);
+    padding-top: 10px;
+  }
+
+  .order-tracking { padding: 8px 10px; }
+  .order-tracking-header h4 { font-size: 0.82rem; }
+  .tracking-name { font-size: 0.80rem; }
+  .status-select { font-size: 0.74rem; padding: 3px 8px; }
+
+  /* ── Main content: single column, menu full width ── */
+  .order-main-content {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+
+  /* ── Menu section ── */
+  .menu-section {
+    border-radius: 14px;
+    padding: 12px;
+    box-shadow: none;
+    border: 1px solid rgba(74,132,96,0.12);
+  }
+
+  /* Category pills: horizontal scroll strip */
+  .category-filters {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    padding-bottom: 12px;
+    gap: 6px;
+    /* un-stick so it scrolls with content on very short screens */
+    position: static;
+    background: none;
+  }
+
+  .category-filters::-webkit-scrollbar { display: none; }
+
+  .category-filter {
+    font-size: 0.78rem;
+    padding: 5px 12px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  /* Menu grid: 2-column tap targets */
+  .items-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+
+  .menu-item-card { border-radius: 12px; }
+  .item-image { height: 60px; }
+  .item-info { padding: 8px 10px; }
+  .item-info h5 { font-size: 0.80rem; }
+  .item-price { font-size: 0.76rem; }
+
+  .add-item-button { width: 22px; height: 22px; font-size: 0.85rem; }
+
+  /* ── Cart panel: slide-up sheet from the cart bar ── */
+  .current-order {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: calc(var(--mobile-nav-h, 68px) + 56px);
+    max-height: 58vh;
+    border-radius: 20px 20px 0 0;
+    transform: translateY(110%);
+    transition: transform 0.32s cubic-bezier(0.32, 0.72, 0, 1);
+    z-index: 148;
+    overflow-y: auto;
+    box-shadow: 0 -10px 40px rgba(0,0,0,0.18);
+    padding: 24px 16px 12px;
+  }
+
+  /* Drag handle indicator */
+  .current-order::before {
+    content: '';
+    position: absolute;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 36px;
+    height: 4px;
+    background: rgba(74,132,96,0.22);
+    border-radius: 99px;
+  }
+
+  /* Slide in when cart-open class on root */
+  .cart-open .current-order { transform: translateY(0); }
+
+  /* ── Backdrop when cart is open ── */
+  .mobile-cart-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.32);
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+    z-index: 147;
+  }
+
+  /* ── Sticky cart bar (always visible above bottom nav) ── */
+  .mobile-cart-bar {
+    display: flex;
+    position: fixed;
+    bottom: var(--mobile-nav-h, 68px);
+    left: 0;
+    right: 0;
+    height: 56px;
+    background: rgba(10,20,13,0.96);
+    backdrop-filter: blur(20px) saturate(160%);
+    -webkit-backdrop-filter: blur(20px) saturate(160%);
+    border-top: 1px solid rgba(74,132,96,0.24);
+    z-index: 149;
+    padding: 0 14px;
+    gap: 10px;
+    align-items: center;
+  }
+
+  .mobile-cart-toggle {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: none;
+    border: none;
+    color: rgba(255,255,255,0.84);
+    font-size: 0.85rem;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    padding: 0;
+    text-align: left;
+  }
+
+  .mobile-cart-info { flex: 1; }
+
+  .mobile-cart-caret {
+    font-size: 0.62rem;
+    color: rgba(255,255,255,0.38);
+    margin-right: 2px;
+  }
+
+  .mobile-checkout-btn {
+    padding: 9px 18px;
+    background: linear-gradient(135deg, #3d7050, #2d5a3d);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 0.88rem;
+    font-weight: 700;
+    font-family: inherit;
+    cursor: pointer;
+    box-shadow: 0 3px 12px rgba(45,90,61,0.40);
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+
+  .mobile-checkout-btn:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+    box-shadow: none;
+  }
+
+  /* ── Payment screen on mobile ── */
+  .payment-container { padding: 18px 14px; border-radius: 16px; }
+  .payment-header h3 { font-size: 1.05rem; }
+  .payment-actions {
+    flex-direction: column;
+    gap: 8px;
+  }
+  /* Primary action at top, cancel at bottom */
+  .complete-button { order: 1; font-size: 0.95rem; padding: 14px; }
+  .back-button     { order: 2; }
+  .cancel-order-button { order: 3; }
+
+  /* ── Smaller empty/loading states ── */
+  .empty-state  { padding: 30px 0; }
+  .loading-container { padding: 30px 0; }
 }
 
 /* ============================================
@@ -1140,3 +1390,77 @@
   font-size: 0.78rem;
   color: rgba(255,255,255,0.7);
 }
+
+/* ============================================
+   REMOVE ORDER CONFIRMATION MODAL
+   ============================================ */
+.confirm-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.55);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 9000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.confirm-modal {
+  background: #fff;
+  border-radius: 16px;
+  padding: 28px 28px 24px;
+  max-width: 340px;
+  width: 90%;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+  text-align: center;
+}
+
+.confirm-modal h4 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #1a3d29;
+  margin: 0 0 8px;
+}
+
+.confirm-modal p {
+  font-size: 0.88rem;
+  color: #6b7280;
+  margin: 0 0 22px;
+}
+
+.confirm-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+
+.confirm-no {
+  flex: 1;
+  padding: 10px 16px;
+  border-radius: 10px;
+  border: 1px solid #d1d5db;
+  background: #f9fafb;
+  color: #374151;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.confirm-no:hover { background: #f3f4f6; }
+
+.confirm-yes {
+  flex: 1;
+  padding: 10px 16px;
+  border-radius: 10px;
+  border: none;
+  background: #ef4444;
+  color: #fff;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.confirm-yes:hover { background: #dc2626; }

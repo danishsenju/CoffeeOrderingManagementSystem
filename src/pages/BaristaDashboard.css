@@ -347,7 +347,8 @@
   .date-display { display: none; }
 
   .content-container {
-    padding: 14px 14px calc(var(--mobile-nav-h) + 14px);
+    /* nav (68) + cart bar (56) + breathing room (12) */
+    padding: 12px 12px calc(var(--mobile-nav-h) + 56px + 12px);
   }
 
   /* ── Show bottom nav ── */

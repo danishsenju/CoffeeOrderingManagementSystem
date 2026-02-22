@@ -1,6 +1,6 @@
 // src/components/Barista/Sales.js
 import { useState, useEffect, useCallback } from 'react';
-import { collection, getDocs, query, where, orderBy, onSnapshot, limit } from 'firebase/firestore';
+import { collection, getDocs, query, where, orderBy, onSnapshot, limit, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '../../firebase/config';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
@@ -23,6 +23,8 @@ function Sales() {
   const [filterText, setFilterText] = useState('');
   const [itemsPerPage] = useState(10);
   const [unsubscribe, setUnsubscribe] = useState(null);
+  const [editingOrderId, setEditingOrderId] = useState(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null);
 
   // Define getFilteredOrders function at component level
   const getFilteredOrders = () => {
@@ -211,6 +213,23 @@ function Sales() {
     }
   }
 
+  // Execute confirmed delete
+  async function executeDeleteOrder(id) {
+    try {
+      await deleteDoc(doc(db, 'orders', id));
+      // onSnapshot listener automatically refreshes salesData + stats
+    } catch (err) {
+      setError('Failed to delete order: ' + err.message);
+    }
+    setConfirmDeleteId(null);
+    setEditingOrderId(null);
+  }
+
+  function cancelDelete() {
+    setConfirmDeleteId(null);
+    setEditingOrderId(null);
+  }
+
   // Format timestamp
   const formatTimestamp = (timestamp) => {
     if (!timestamp) return 'N/A';
@@ -347,6 +366,7 @@ function Sales() {
                         <th>Items</th>
                         <th>Payment</th>
                         <th>Total</th>
+                        <th></th>
                       </tr>
                     </thead>
                     <tbody>
@@ -372,6 +392,31 @@ function Sales() {
                             )}
                           </td>
                           <td>RM{(order.totalAmount || 0).toFixed(2)}</td>
+                          <td>
+                            {editingOrderId === order.id ? (
+                              <div className="sales-row-actions">
+                                <button
+                                  className="sales-delete-btn"
+                                  onClick={() => setConfirmDeleteId(order.id)}
+                                >
+                                  Delete
+                                </button>
+                                <button
+                                  className="sales-cancel-edit-btn"
+                                  onClick={() => setEditingOrderId(null)}
+                                >
+                                  Cancel
+                                </button>
+                              </div>
+                            ) : (
+                              <button
+                                className="sales-edit-btn"
+                                onClick={() => setEditingOrderId(order.id)}
+                              >
+                                Edit
+                              </button>
+                            )}
+                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -404,6 +449,18 @@ function Sales() {
             )}
           </div>
         </>
+      )}
+      {confirmDeleteId && (
+        <div className="confirm-overlay" onClick={cancelDelete}>
+          <div className="confirm-modal" onClick={e => e.stopPropagation()}>
+            <h4>Delete this order?</h4>
+            <p>This action cannot be undone.</p>
+            <div className="confirm-actions">
+              <button className="confirm-no" onClick={cancelDelete}>No, Keep It</button>
+              <button className="confirm-yes" onClick={() => executeDeleteOrder(confirmDeleteId)}>Yes, Delete</button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

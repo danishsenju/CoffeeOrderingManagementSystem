@@ -56,10 +56,11 @@ export function OrderProvider({ children }) {
     if (activeOrders.length > 0) {
       localStorage.setItem('activeOrders', JSON.stringify(activeOrders));
       console.log('Saved active orders to localStorage:', activeOrders);
-
-      // Update displayed orders
-      updateDisplayedOrders();
+    } else {
+      localStorage.removeItem('activeOrders');
     }
+    // Always refresh displayed orders, including when the list becomes empty
+    updateDisplayedOrders();
   }, [activeOrders]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Save completed orders to localStorage
@@ -110,6 +111,15 @@ export function OrderProvider({ children }) {
         return order;
       })
     );
+  };
+
+  // Function to cancel/remove an active order
+  const cancelOrder = (orderId) => {
+    setActiveOrders(prev => {
+      const updated = prev.filter(order => order.id !== orderId);
+      if (updated.length === 0) localStorage.removeItem('activeOrders');
+      return updated;
+    });
   };
 
   // Function to mark an order as served/completed
@@ -167,7 +177,8 @@ export function OrderProvider({ children }) {
     updateItemStatus,
     completeOrder,
     updatePaymentMethod,
-    areAllItemsCompleted
+    areAllItemsCompleted,
+    cancelOrder
   };
 
   return (

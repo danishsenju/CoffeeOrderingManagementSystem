@@ -273,6 +273,127 @@
 
 .items-cell { max-width: 220px; }
 
+.sales-row-actions {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.sales-edit-btn {
+  padding: 4px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(74,132,96,0.22);
+  background: rgba(74,132,96,0.08);
+  color: #2d5a3d;
+  font-size: 0.78rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.sales-edit-btn:hover { background: rgba(74,132,96,0.16); }
+
+.sales-delete-btn {
+  padding: 4px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(239,68,68,0.22);
+  background: rgba(239,68,68,0.10);
+  color: #b91c1c;
+  font-size: 0.78rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.sales-delete-btn:hover { background: rgba(239,68,68,0.20); }
+
+.sales-cancel-edit-btn {
+  padding: 4px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(100,116,139,0.18);
+  background: rgba(100,116,139,0.08);
+  color: #475569;
+  font-size: 0.78rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.sales-cancel-edit-btn:hover { background: rgba(100,116,139,0.16); }
+
+/* ── Confirmation modal ── */
+.confirm-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9000;
+  background: rgba(0,0,0,0.45);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.confirm-modal {
+  background: rgba(255,255,255,0.96);
+  border: 1px solid rgba(74,132,96,0.18);
+  border-radius: 18px;
+  padding: 28px 32px;
+  width: 320px;
+  box-shadow: 0 16px 48px rgba(0,0,0,0.18);
+  font-family: 'Poppins', sans-serif;
+  text-align: center;
+}
+
+.confirm-modal h4 {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #1a3d29;
+  margin: 0 0 8px;
+}
+
+.confirm-modal p {
+  font-size: 0.85rem;
+  color: #6b8f78;
+  margin: 0 0 22px;
+}
+
+.confirm-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.confirm-no,
+.confirm-yes {
+  flex: 1;
+  padding: 10px 16px;
+  border-radius: 10px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
+  transition: all 0.18s ease;
+}
+
+.confirm-no {
+  background: rgba(100,116,139,0.10);
+  color: #475569;
+  border: 1px solid rgba(100,116,139,0.18);
+}
+
+.confirm-no:hover { background: rgba(100,116,139,0.18); }
+
+.confirm-yes {
+  background: rgba(239,68,68,0.12);
+  color: #b91c1c;
+  border: 1px solid rgba(239,68,68,0.22);
+}
+
+.confirm-yes:hover { background: rgba(239,68,68,0.22); }
+
 .items-cell div {
   margin-bottom: 3px;
   white-space: nowrap;

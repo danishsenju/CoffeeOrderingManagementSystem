@@ -1,7 +1,7 @@
 // src/components/Barista/OrderForm.js
 import { useState, useEffect } from 'react';
 import { Coffee, Flame, Snowflake, ShoppingCart, Banknote, Smartphone, Lock, Sun, X, ChevronLeft } from 'lucide-react';
-import { collection, getDocs, addDoc, doc, updateDoc, getDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, getDocs, addDoc, doc, updateDoc, getDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../../firebase/config';
 import qrImage from '../../images/qrdanish.jpeg';
 import { useOrders } from '../../context/OrderContext'; // Import the orders context
@@ -15,7 +15,8 @@ function OrderForm() {
     updateItemStatus: contextUpdateItemStatus,
     completeOrder,
     updatePaymentMethod,
-    areAllItemsCompleted
+    areAllItemsCompleted,
+    cancelOrder
   } = useOrders();
 
   // Local component state
@@ -33,6 +34,8 @@ function OrderForm() {
   const [qrFullscreen, setQrFullscreen] = useState(false);
   const [qrBrightness, setQrBrightness] = useState(1);
   const [customerGender, setCustomerGender] = useState('');
+  const [mobileCartOpen, setMobileCartOpen] = useState(false);
+  const [confirmRemoveId, setConfirmRemoveId] = useState(null);
 
   useEffect(() => {
     // Fetch menu items from Firestore
@@ -388,6 +391,34 @@ function OrderForm() {
     }
   }
 
+  // Handle removing/cancelling an active order (from tracking panel X button)
+  async function handleRemoveOrder(id) {
+    cancelOrder(id);
+    try {
+      await deleteDoc(doc(db, 'orders', id));
+    } catch (err) {
+      console.error('Failed to delete order from Firestore:', err);
+    }
+  }
+
+  // Cancel the current in-progress order from the payment screen
+  async function handleCancelOrder() {
+    if (orderId) {
+      cancelOrder(orderId);
+      try {
+        await deleteDoc(doc(db, 'orders', orderId));
+      } catch (err) {
+        console.error('Failed to delete order from Firestore:', err);
+      }
+    }
+    setOrderItems([]);
+    setCustomerName('');
+    setCustomerGender('');
+    setOrderTotal(0);
+    setShowPayment(false);
+    setOrderId(null);
+  }
+
   // Get all available categories
   const categories = ['all', ...Object.keys(menuItems)];
   
@@ -479,7 +510,7 @@ function OrderForm() {
   }
 
   return (
-    <div className="barista-order-form">
+    <div className={`barista-order-form${mobileCartOpen ? ' cart-open' : ''}`}>
       {/* Top Order Summary and Tracking Bar */}
       <div className="top-order-bar">
         <div className="order-info">
@@ -497,14 +528,23 @@ function OrderForm() {
               <div key={order.id} className={`order-tracking order-gender-${order.gender || 'none'}`}>
                 <div className="order-tracking-header">
                   <h4>{order.customer}</h4>
-                  {areAllItemsCompleted(order.id) && (
+                  <div className="tracking-header-actions">
+                    {areAllItemsCompleted(order.id) && (
+                      <button
+                        className="serve-button small"
+                        onClick={() => handleServeOrder(order.id)}
+                      >
+                        Serve
+                      </button>
+                    )}
                     <button
-                      className="serve-button small"
-                      onClick={() => handleServeOrder(order.id)}
+                      className="remove-order-btn"
+                      onClick={() => setConfirmRemoveId(order.id)}
+                      title="Remove order"
                     >
-                      Serve
+                      <X size={13} />
                     </button>
-                  )}
+                  </div>
                 </div>
                 <div className="tracking-items">
                   {order.items.map(item => (
@@ -669,8 +709,11 @@ function OrderForm() {
               )}
               
               <div className="payment-actions">
+                <button onClick={handleCancelOrder} className="cancel-order-button">
+                  Cancel Order
+                </button>
                 <button onClick={() => setShowPayment(false)} className="back-button">
-                  Back to Order
+                  Edit Order
                 </button>
                 <button onClick={handlePaymentCompleted} className="complete-button">
                   Complete Payment
@@ -781,6 +824,52 @@ function OrderForm() {
           </div>
         </div>
       )}
+      {/* Mobile sticky cart bar — portrait phones only */}
+      {!showPayment && (
+        <>
+          {mobileCartOpen && (
+            <div
+              className="mobile-cart-backdrop"
+              onClick={() => setMobileCartOpen(false)}
+            />
+          )}
+          <div className="mobile-cart-bar">
+            <button
+              className="mobile-cart-toggle"
+              onClick={() => setMobileCartOpen(!mobileCartOpen)}
+            >
+              <ShoppingCart size={16} />
+              <span className="mobile-cart-info">
+                {orderItems.reduce((s, i) => s + i.quantity, 0)} items
+                {orderItems.length > 0 && ` · RM${orderTotal.toFixed(2)}`}
+              </span>
+              <span className="mobile-cart-caret">{mobileCartOpen ? '▼' : '▲'}</span>
+            </button>
+            <button
+              className="mobile-checkout-btn"
+              onClick={handleCompleteOrder}
+              disabled={orderItems.length === 0}
+            >
+              Order →
+            </button>
+          </div>
+        </>
+      )}
+
+      {/* Remove Order Confirmation Modal */}
+      {confirmRemoveId && (
+        <div className="confirm-overlay" onClick={() => setConfirmRemoveId(null)}>
+          <div className="confirm-modal" onClick={e => e.stopPropagation()}>
+            <h4>Remove this order?</h4>
+            <p>This will delete the order and cannot be undone.</p>
+            <div className="confirm-actions">
+              <button className="confirm-no" onClick={() => setConfirmRemoveId(null)}>No, Keep It</button>
+              <button className="confirm-yes" onClick={() => { handleRemoveOrder(confirmRemoveId); setConfirmRemoveId(null); }}>Yes, Remove</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* QR Fullscreen Overlay */}
       {qrFullscreen && (
         <div className="qr-fullscreen-overlay">
