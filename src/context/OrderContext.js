@@ -26,7 +26,6 @@ export function OrderProvider({ children }) {
         }));
         
         setActiveOrders(processedOrders);
-        console.log('Loaded active orders from localStorage:', processedOrders);
       } catch (err) {
         console.error('Error loading saved orders:', err);
       }
@@ -55,7 +54,6 @@ export function OrderProvider({ children }) {
   useEffect(() => {
     if (activeOrders.length > 0) {
       localStorage.setItem('activeOrders', JSON.stringify(activeOrders));
-      console.log('Saved active orders to localStorage:', activeOrders);
     } else {
       localStorage.removeItem('activeOrders');
     }

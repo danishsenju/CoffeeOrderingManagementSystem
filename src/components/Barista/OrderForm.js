@@ -1,11 +1,71 @@
 // src/components/Barista/OrderForm.js
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, memo } from 'react';
 import { Coffee, Flame, Snowflake, ShoppingCart, Banknote, Smartphone, Lock, Sun, X, ChevronLeft } from 'lucide-react';
-import { collection, getDocs, addDoc, doc, updateDoc, getDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, onSnapshot, addDoc, doc, updateDoc, getDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../../firebase/config';
 import qrImage from '../../images/qrdanish.jpeg';
 import { useOrders } from '../../context/OrderContext'; // Import the orders context
 import './OrderForm.css';
+
+const MenuItemCard = memo(function MenuItemCard({ item, onAdd, onAddWithTemp }) {
+  const hasTempOptions = item.hotPrice !== undefined && item.coldPrice !== undefined;
+  const isAvailable = item.available !== false;
+  const unavailableStyle = { opacity: 0.5, position: 'relative' };
+
+  if (hasTempOptions) {
+    return (
+      <div
+        className={`menu-item-card ${!isAvailable ? 'unavailable' : ''}`}
+        style={!isAvailable ? unavailableStyle : {}}
+      >
+        {!isAvailable && (
+          <div className="unavailable-overlay">
+            <span className="unavailable-icon"><Lock size={20} /></span>
+            <span className="unavailable-text">Not Available</span>
+          </div>
+        )}
+        <div className="item-image"><span className="coffee-icon"><Coffee size={20} /></span></div>
+        <div className="item-info"><h5>{item.name}</h5></div>
+        <div className="temperature-options">
+          <button
+            className="temp-button hot"
+            onClick={(e) => { e.stopPropagation(); if (isAvailable) onAddWithTemp(item, 'Hot'); }}
+            disabled={!isAvailable}
+          >
+            <span className="temp-icon"><Flame size={16} /></span>
+          </button>
+          <button
+            className="temp-button cold"
+            onClick={(e) => { e.stopPropagation(); if (isAvailable) onAddWithTemp(item, 'Cold'); }}
+            disabled={!isAvailable}
+          >
+            <span className="temp-icon"><Snowflake size={16} /></span>
+          </button>
+        </div>
+      </div>
+    );
+  }
+  return (
+    <div
+      className={`menu-item-card ${!isAvailable ? 'unavailable' : ''}`}
+      onClick={() => isAvailable && onAdd(item)}
+      style={!isAvailable ? unavailableStyle : {}}
+    >
+      {!isAvailable && (
+        <div className="unavailable-overlay">
+          <span className="unavailable-icon"><Lock size={20} /></span>
+          <span className="unavailable-text">Not Available</span>
+        </div>
+      )}
+      <div className="item-image"><span className="coffee-icon"><Coffee size={20} /></span></div>
+      <div className="item-info">
+        <h5>{item.name}</h5>
+        <div className="item-price">RM{item.price?.toFixed(2) || '0.00'}</div>
+      </div>
+      <button className="add-item-button" disabled={!isAvailable}><span>+</span></button>
+    </div>
+  );
+});
 
 function OrderForm() {
   // Get order state and functions from context
@@ -38,8 +98,20 @@ function OrderForm() {
   const [confirmRemoveId, setConfirmRemoveId] = useState(null);
 
   useEffect(() => {
-    // Fetch menu items from Firestore
-    fetchMenuItems();
+    const unsubscribe = onSnapshot(collection(db, 'menu'), (snapshot) => {
+      const grouped = snapshot.docs.reduce((acc, d) => {
+        const item = { id: d.id, ...d.data() };
+        if (!acc[item.category]) acc[item.category] = [];
+        acc[item.category].push(item);
+        return acc;
+      }, {});
+      setMenuItems(grouped);
+      setLoading(false);
+    }, (err) => {
+      setError('Failed to fetch menu items: ' + err.message);
+      setLoading(false);
+    });
+    return () => unsubscribe();
   }, []);
 
   // Helper function to normalize payment method values
@@ -79,85 +151,29 @@ function OrderForm() {
     return 'Other';
   }
 
-  async function fetchMenuItems() {
-    setLoading(true);
-    try {
-      const menuCollection = collection(db, 'menu');
-      const menuSnapshot = await getDocs(menuCollection);
-      const items = menuSnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-      
-      // Group items by category - we'll keep unavailable items but mark them
-      const groupedItems = items.reduce((acc, item) => {
-        if (!acc[item.category]) {
-          acc[item.category] = [];
-        }
-        acc[item.category].push(item);
-        return acc;
-      }, {});
-      
-      setMenuItems(groupedItems);
-    } catch (err) {
-      setError('Failed to fetch menu items: ' + err.message);
-    }
-    setLoading(false);
-  }
-
   // Wrapper function to update item status in both context and Firestore
   async function handleUpdateItemStatus(orderId, itemId, newStatus) {
-    console.log(`Updating item ${itemId} in order ${orderId} to status: ${newStatus}`);
-    
-    // Update in context
     contextUpdateItemStatus(orderId, itemId, newStatus);
-    
-    // If this is the current order being created, update orderItems too
+
     if (orderItems.some(item => item.id === itemId)) {
-      setOrderItems(prevItems => {
-        return prevItems.map(item => {
-          if (item.id === itemId) {
-            return { ...item, status: newStatus };
-          }
-          return item;
-        });
-      });
+      setOrderItems(prevItems =>
+        prevItems.map(item => item.id === itemId ? { ...item, status: newStatus } : item)
+      );
     }
-    
+
     try {
-      // Update in Firestore
       const orderDoc = doc(db, 'orders', orderId);
       const orderSnapshot = await getDoc(orderDoc);
-      
       if (orderSnapshot.exists()) {
-        const orderData = orderSnapshot.data();
-        
-        // Find and update the matching item in the Firestore data
-        const updatedItems = orderData.items.map(item => {
-          // This handles both regular items and temperature-specific items
-          const itemIdMatches = 
-            item.id === itemId || 
-            (item.originalId && item.originalId === itemId) || 
-            (itemId.includes(item.id));
-          
-          if (itemIdMatches) {
-            console.log(`Found matching item: ${item.name} with id ${item.id}`);
-            return { ...item, status: newStatus };
-          }
-          return item;
+        const updatedItems = orderSnapshot.data().items.map(item => {
+          const matches = item.id === itemId ||
+            (item.originalId && item.originalId === itemId) ||
+            itemId.includes(item.id);
+          return matches ? { ...item, status: newStatus } : item;
         });
-        
-        // Update the items array in Firestore
-        await updateDoc(orderDoc, {
-          items: updatedItems
-        });
-        
-        console.log(`Status for item ${itemId} in order ${orderId} updated to ${newStatus} in Firestore`);
-      } else {
-        console.error(`Order document ${orderId} not found in Firestore`);
+        await updateDoc(orderDoc, { items: updatedItems });
       }
     } catch (error) {
-      console.error("Error updating item status in Firestore:", error);
       setError(`Failed to update item status: ${error.message}`);
       setTimeout(() => setError(''), 3000);
     }
@@ -324,39 +340,16 @@ function OrderForm() {
   }
 
   async function handlePaymentCompleted() {
-    // Log current payment method value for debugging
-    console.log("Current payment method before processing:", paymentMethod, typeof paymentMethod);
-    
-    // Force payment method to be exactly 'cash' or 'qr'
     const validPaymentMethod = paymentMethod === 'cash' ? 'cash' : 'qr';
-    
-    console.log("Using payment method:", validPaymentMethod);
-    
-    // Update context
+
     updatePaymentMethod(orderId, validPaymentMethod);
-    
-    // CRITICAL: Update the order in Firestore to include payment method
+
     try {
-      const orderDoc = doc(db, 'orders', orderId);
-      
-      // Let's log the document we're updating
-      console.log("Updating document:", orderId, "with payment method:", validPaymentMethod);
-      
-      // Use updateDoc with explicit field path to update payment method
-      await updateDoc(orderDoc, {
-        "paymentMethod": validPaymentMethod // Specify exact string literal
+      await updateDoc(doc(db, 'orders', orderId), {
+        paymentMethod: validPaymentMethod
       });
-      
-      console.log(`Payment method updated successfully to "${validPaymentMethod}" for order ${orderId}`);
-      
-      // Verify after update
-      const docRef = doc(db, 'orders', orderId);
-      const snap = await getDoc(docRef);
-      if (snap.exists()) {
-        console.log("Verification - updated document data:", snap.data());
-      }
     } catch (error) {
-      console.error("Exception when updating payment method:", error);
+      console.error("Failed to update payment method:", error);
     }
     
     // Reset current order form
@@ -375,17 +368,12 @@ function OrderForm() {
 
   // Handle serve order (mark as completed)
   async function handleServeOrder(orderId) {
-    // Use the context function
     completeOrder(orderId);
-    
-    // Also update in Firestore
     try {
-      const orderDoc = doc(db, 'orders', orderId);
-      await updateDoc(orderDoc, {
+      await updateDoc(doc(db, 'orders', orderId), {
         status: 'completed',
         completedAt: serverTimestamp()
       });
-      console.log(`Order ${orderId} marked as completed in Firestore`);
     } catch (error) {
       console.error("Error updating order status in Firestore:", error);
     }
@@ -421,93 +409,44 @@ function OrderForm() {
 
   // Get all available categories
   const categories = ['all', ...Object.keys(menuItems)];
-  
+
   // Filter menu items by category if not "all"
-  const filteredMenuItems = activeCategory === 'all' 
-    ? menuItems 
+  const filteredMenuItems = activeCategory === 'all'
+    ? menuItems
     : { [activeCategory]: menuItems[activeCategory] };
 
-  // Custom menu item card component with temperature options
-  function MenuItemCard({ item }) {
-    const hasTempOptions = item.hotPrice !== undefined && item.coldPrice !== undefined;
-    const isAvailable = item.available !== false; // Consider undefined as available for backward compatibility
-    
-    // Common styles for unavailable items
-    const unavailableStyle = {
-      opacity: 0.5,
-      position: 'relative'
+  // Stable callbacks so MenuItemCard (memo) doesn't re-render on unrelated state changes
+  const handleAddToOrder = useCallback((item) => {
+    const itemWithCategory = { ...item, category: item.category || detectCategory(item.name) || 'Unknown' };
+    setOrderItems(prev => {
+      const existing = prev.find(o => o.id === item.id);
+      if (existing) return prev.map(o => o.id === item.id ? { ...o, quantity: o.quantity + 1 } : o);
+      return [...prev, { ...itemWithCategory, quantity: 1, status: 'pending' }];
+    });
+    setOrderTotal(prev => prev + item.price);
+    setSuccess(`Added ${item.name} to order`);
+    setTimeout(() => setSuccess(''), 1500);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleAddWithTemp = useCallback((item, temperature) => {
+    const tempPrice = temperature === 'Hot' ? item.hotPrice : item.coldPrice;
+    const itemId = item.id + '-' + temperature.toLowerCase();
+    const category = item.category || detectCategory(item.name) || 'Unknown';
+    const itemWithTemp = {
+      id: itemId, originalId: item.id,
+      name: `${item.name} (${temperature})`,
+      price: tempPrice, temperature,
+      baseItem: item.name, category, status: 'pending'
     };
-    
-    if (hasTempOptions) {
-      return (
-        <div 
-          className={`menu-item-card ${!isAvailable ? 'unavailable' : ''}`} 
-          style={!isAvailable ? unavailableStyle : {}}
-        >
-          {!isAvailable && (
-            <div className="unavailable-overlay">
-              <span className="unavailable-icon"><Lock size={20} /></span>
-              <span className="unavailable-text">Not Available</span>
-            </div>
-          )}
-          <div className="item-image">
-            <span className="coffee-icon"><Coffee size={20} /></span>
-          </div>
-          <div className="item-info">
-            <h5>{item.name}</h5>
-          </div>
-          <div className="temperature-options">
-            <button
-              className="temp-button hot"
-              onClick={(e) => {
-                e.stopPropagation();
-                if (isAvailable) addItemWithTemperature(item, 'Hot');
-              }}
-              disabled={!isAvailable}
-            >
-              <span className="temp-icon"><Flame size={16} /></span>
-            </button>
-            <button
-              className="temp-button cold"
-              onClick={(e) => {
-                e.stopPropagation();
-                if (isAvailable) addItemWithTemperature(item, 'Cold');
-              }}
-              disabled={!isAvailable}
-            >
-              <span className="temp-icon"><Snowflake size={16} /></span>
-            </button>
-          </div>
-        </div>
-      );
-    } else {
-      // Standard menu item without temperature options
-      return (
-        <div 
-          className={`menu-item-card ${!isAvailable ? 'unavailable' : ''}`}
-          onClick={() => isAvailable && addToOrder(item)}
-          style={!isAvailable ? unavailableStyle : {}}
-        >
-          {!isAvailable && (
-            <div className="unavailable-overlay">
-              <span className="unavailable-icon"><Lock size={20} /></span>
-              <span className="unavailable-text">Not Available</span>
-            </div>
-          )}
-          <div className="item-image">
-            <span className="coffee-icon"><Coffee size={20} /></span>
-          </div>
-          <div className="item-info">
-            <h5>{item.name}</h5>
-            <div className="item-price">RM{item.price?.toFixed(2) || '0.00'}</div>
-          </div>
-          <button className="add-item-button" disabled={!isAvailable}>
-            <span>+</span>
-          </button>
-        </div>
-      );
-    }
-  }
+    setOrderItems(prev => {
+      const existing = prev.find(o => o.id === itemId);
+      if (existing) return prev.map(o => o.id === itemId ? { ...o, quantity: o.quantity + 1 } : o);
+      return [...prev, { ...itemWithTemp, quantity: 1 }];
+    });
+    setOrderTotal(prev => prev + tempPrice);
+    setSuccess(`Added ${item.name} (${temperature}) to order`);
+    setTimeout(() => setSuccess(''), 1500);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div className={`barista-order-form${mobileCartOpen ? ' cart-open' : ''}`}>
@@ -757,7 +696,7 @@ function OrderForm() {
                     <h4>{category.charAt(0).toUpperCase() + category.slice(1)}</h4>
                     <div className="items-grid">
                       {filteredMenuItems[category].map(item => (
-                        <MenuItemCard key={item.id} item={item} />
+                        <MenuItemCard key={item.id} item={item} onAdd={handleAddToOrder} onAddWithTemp={handleAddWithTemp} />
                       ))}
                     </div>
                   </div>
