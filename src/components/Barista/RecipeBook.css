@@ -1,0 +1,221 @@
+/* src/components/Barista/RecipeBook.css */
+
+.recipe-book {
+  max-width: 800px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding-bottom: 32px;
+}
+
+/* ── Search ── */
+.rb-search-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.rb-search-icon {
+  position: absolute;
+  left: 14px;
+  color: #6b7280;
+  pointer-events: none;
+}
+
+.rb-search {
+  width: 100%;
+  padding: 11px 40px 11px 40px;
+  border: 1px solid rgba(74,132,96,0.25);
+  border-radius: 12px;
+  font-size: 0.93rem;
+  font-family: inherit;
+  background: white;
+  color: #1a3d29;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.rb-search:focus {
+  border-color: rgba(74,132,96,0.55);
+  box-shadow: 0 0 0 3px rgba(74,132,96,0.10);
+}
+
+.rb-search-clear {
+  position: absolute;
+  right: 12px;
+  background: none;
+  border: none;
+  font-size: 0.78rem;
+  color: #9ca3af;
+  cursor: pointer;
+  padding: 4px;
+}
+
+.rb-search-clear:hover { color: #6b7280; }
+
+/* ── Category pills ── */
+.rb-cats {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.rb-cat-btn {
+  padding: 6px 14px;
+  border-radius: 20px;
+  border: 1px solid rgba(74,132,96,0.25);
+  background: white;
+  color: #4a8460;
+  font-size: 0.82rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: inherit;
+}
+
+.rb-cat-btn:hover   { background: rgba(74,132,96,0.08); }
+.rb-cat-btn.active  { background: #2d5a3d; color: white; border-color: #2d5a3d; }
+
+/* ── Category section ── */
+.rb-category-section { display: flex; flex-direction: column; gap: 10px; }
+
+.rb-category-title {
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #6b7280;
+  padding-bottom: 4px;
+  border-bottom: 1px solid #e5e7eb;
+  margin: 0;
+}
+
+/* ── Cards ── */
+.rb-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.rb-card {
+  background: white;
+  border: 1px solid rgba(74,132,96,0.15);
+  border-radius: 14px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+  transition: box-shadow 0.15s;
+}
+
+.rb-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+
+.rb-card-unavailable { opacity: 0.55; }
+
+.rb-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.rb-item-name {
+  font-size: 0.93rem;
+  font-weight: 700;
+  color: #1a3d29;
+  line-height: 1.3;
+}
+
+.rb-tag-unavailable {
+  flex-shrink: 0;
+  font-size: 0.68rem;
+  font-weight: 600;
+  background: #fee2e2;
+  color: #dc2626;
+  border-radius: 6px;
+  padding: 2px 7px;
+}
+
+/* ── Ingredients list ── */
+.rb-ingredients {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.rb-ingredients li {
+  font-size: 0.83rem;
+  color: #374151;
+  padding-left: 14px;
+  position: relative;
+  line-height: 1.45;
+}
+
+.rb-ingredients li::before {
+  content: '·';
+  position: absolute;
+  left: 3px;
+  color: #4a8460;
+  font-weight: 700;
+}
+
+.rb-no-recipe {
+  font-size: 0.8rem;
+  color: #9ca3af;
+  font-style: italic;
+  margin: 0;
+}
+
+/* ── Price row ── */
+.rb-price-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 2px;
+}
+
+.rb-price {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #2d5a3d;
+  background: rgba(74,132,96,0.08);
+  padding: 2px 8px;
+  border-radius: 6px;
+}
+
+/* ── Empty ── */
+.rb-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 60px 20px;
+  color: #9ca3af;
+  text-align: center;
+}
+
+.rb-empty p { margin: 0; font-size: 0.9rem; }
+
+/* ── Mobile ── */
+@media (max-width: 767px) {
+  .rb-cards {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .rb-card {
+    padding: 12px 13px;
+  }
+
+  .rb-item-name { font-size: 0.87rem; }
+  .rb-ingredients li { font-size: 0.8rem; }
+}
+
+@media (max-width: 420px) {
+  .rb-cards { grid-template-columns: 1fr; }
+}

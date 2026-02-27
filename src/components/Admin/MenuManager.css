@@ -114,6 +114,42 @@
 
 .form-group input::placeholder { color: rgba(74,132,96,0.45); }
 
+.form-group-full { flex: 1 1 100%; width: 100%; }
+
+.label-hint {
+  font-weight: 400;
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+.recipe-textarea {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid rgba(74,132,96,0.22);
+  border-radius: 10px;
+  font-size: 0.85rem;
+  font-family: inherit;
+  background: rgba(255,255,255,0.80);
+  color: #1a3d29;
+  resize: vertical;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  line-height: 1.55;
+}
+
+.recipe-textarea:focus {
+  border-color: rgba(74,132,96,0.55);
+  box-shadow: 0 0 0 3px rgba(74,132,96,0.10);
+  background: white;
+}
+
+.recipe-textarea::placeholder { color: rgba(74,132,96,0.40); }
+
+.recipe-textarea-inline {
+  margin-top: 6px;
+  font-size: 0.78rem;
+}
+
 /* ── Filters ── */
 .filters-container {
   display: flex;

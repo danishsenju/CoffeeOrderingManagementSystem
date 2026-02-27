@@ -2,9 +2,10 @@
 import { useState, useEffect } from 'react';
 import { Routes, Route, Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { ShoppingCart, BarChart2, LogOut, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ShoppingCart, BarChart2, BookOpen, LogOut, ChevronLeft, ChevronRight } from 'lucide-react';
 import OrderForm from '../components/Barista/OrderForm';
 import Sales from '../components/Barista/Sales';
+import RecipeBook from '../components/Barista/RecipeBook';
 import './BaristaDashboard.css';
 import coffeeLogo from '../images/MauKoffie-logo.png';
 
@@ -18,6 +19,8 @@ function BaristaDashboard() {
   useEffect(() => {
     if (location.pathname.includes('/sales')) {
       setActiveTab('sales');
+    } else if (location.pathname.includes('/recipes')) {
+      setActiveTab('recipes');
     } else {
       setActiveTab('orders');
     }
@@ -68,6 +71,16 @@ function BaristaDashboard() {
                 <span className="nav-text">Today's Sales</span>
               </Link>
             </li>
+            <li>
+              <Link
+                to="/barista/recipes"
+                className={activeTab === 'recipes' ? 'active' : ''}
+                onClick={() => setActiveTab('recipes')}
+              >
+                <span className="nav-icon"><BookOpen size={18} /></span>
+                <span className="nav-text">Recipes</span>
+              </Link>
+            </li>
           </ul>
         </nav>
 
@@ -99,7 +112,7 @@ function BaristaDashboard() {
       <main className="main-content">
         <header className="content-header">
           <h2 className="page-title">
-            {activeTab === 'orders' ? 'Take Orders' : "Today's Sales"}
+            {activeTab === 'orders' ? 'Take Orders' : activeTab === 'sales' ? "Today's Sales" : 'Recipes'}
           </h2>
           <div className="header-actions">
             <div className="date-display">
@@ -112,9 +125,10 @@ function BaristaDashboard() {
 
         <div className="content-container">
           <Routes>
-            <Route path="/"       element={<OrderForm />} />
-            <Route path="/orders" element={<OrderForm />} />
-            <Route path="/sales"  element={<Sales />} />
+            <Route path="/"        element={<OrderForm />} />
+            <Route path="/orders"  element={<OrderForm />} />
+            <Route path="/sales"   element={<Sales />} />
+            <Route path="/recipes" element={<RecipeBook />} />
           </Routes>
         </div>
       </main>
@@ -136,6 +150,14 @@ function BaristaDashboard() {
         >
           <span className="mobile-nav-icon"><BarChart2 size={20} /></span>
           <span className="mobile-nav-label">Sales</span>
+        </Link>
+        <Link
+          to="/barista/recipes"
+          className={`mobile-nav-item ${activeTab === 'recipes' ? 'active' : ''}`}
+          onClick={() => setActiveTab('recipes')}
+        >
+          <span className="mobile-nav-icon"><BookOpen size={20} /></span>
+          <span className="mobile-nav-label">Recipes</span>
         </Link>
         <button onClick={handleLogout} className="mobile-nav-item">
           <span className="mobile-nav-icon"><LogOut size={20} /></span>

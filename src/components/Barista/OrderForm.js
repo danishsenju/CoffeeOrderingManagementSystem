@@ -1,16 +1,26 @@
 // src/components/Barista/OrderForm.js
 import { useState, useEffect, useCallback, memo } from 'react';
-import { Coffee, Flame, Snowflake, ShoppingCart, Banknote, Smartphone, Lock, Sun, X, ChevronLeft } from 'lucide-react';
+import { Coffee, Flame, Snowflake, ShoppingCart, Banknote, Smartphone, Lock, Sun, X, ChevronLeft, Info } from 'lucide-react';
 import { collection, onSnapshot, addDoc, doc, updateDoc, getDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../../firebase/config';
 import qrImage from '../../images/qrdanish.jpeg';
 import { useOrders } from '../../context/OrderContext'; // Import the orders context
 import './OrderForm.css';
 
-const MenuItemCard = memo(function MenuItemCard({ item, onAdd, onAddWithTemp }) {
+const MenuItemCard = memo(function MenuItemCard({ item, onAdd, onAddWithTemp, onShowRecipe }) {
   const hasTempOptions = item.hotPrice !== undefined && item.coldPrice !== undefined;
   const isAvailable = item.available !== false;
   const unavailableStyle = { opacity: 0.5, position: 'relative' };
+
+  const infoBtn = item.recipe ? (
+    <button
+      className="card-info-btn"
+      onClick={(e) => { e.stopPropagation(); onShowRecipe(item); }}
+      title="View recipe"
+    >
+      <Info size={13} />
+    </button>
+  ) : null;
 
   if (hasTempOptions) {
     return (
@@ -24,6 +34,7 @@ const MenuItemCard = memo(function MenuItemCard({ item, onAdd, onAddWithTemp }) 
             <span className="unavailable-text">Not Available</span>
           </div>
         )}
+        {infoBtn}
         <div className="item-image"><span className="coffee-icon"><Coffee size={20} /></span></div>
         <div className="item-info"><h5>{item.name}</h5></div>
         <div className="temperature-options">
@@ -57,6 +68,7 @@ const MenuItemCard = memo(function MenuItemCard({ item, onAdd, onAddWithTemp }) 
           <span className="unavailable-text">Not Available</span>
         </div>
       )}
+      {infoBtn}
       <div className="item-image"><span className="coffee-icon"><Coffee size={20} /></span></div>
       <div className="item-info">
         <h5>{item.name}</h5>
@@ -96,6 +108,7 @@ function OrderForm() {
   const [customerGender, setCustomerGender] = useState('');
   const [mobileCartOpen, setMobileCartOpen] = useState(false);
   const [confirmRemoveId, setConfirmRemoveId] = useState(null);
+  const [recipeItem, setRecipeItem] = useState(null);
 
   useEffect(() => {
     const unsubscribe = onSnapshot(collection(db, 'menu'), (snapshot) => {
@@ -448,6 +461,8 @@ function OrderForm() {
     setTimeout(() => setSuccess(''), 1500);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  const handleShowRecipe = useCallback((item) => setRecipeItem(item), []);
+
   return (
     <div className={`barista-order-form${mobileCartOpen ? ' cart-open' : ''}`}>
       {/* Top Order Summary and Tracking Bar */}
@@ -696,7 +711,7 @@ function OrderForm() {
                     <h4>{category.charAt(0).toUpperCase() + category.slice(1)}</h4>
                     <div className="items-grid">
                       {filteredMenuItems[category].map(item => (
-                        <MenuItemCard key={item.id} item={item} onAdd={handleAddToOrder} onAddWithTemp={handleAddWithTemp} />
+                        <MenuItemCard key={item.id} item={item} onAdd={handleAddToOrder} onAddWithTemp={handleAddWithTemp} onShowRecipe={handleShowRecipe} />
                       ))}
                     </div>
                   </div>
@@ -793,6 +808,29 @@ function OrderForm() {
             </button>
           </div>
         </>
+      )}
+
+      {/* Recipe Quick-View Modal */}
+      {recipeItem && (
+        <div className="confirm-overlay" onClick={() => setRecipeItem(null)}>
+          <div className="confirm-modal recipe-modal" onClick={e => e.stopPropagation()}>
+            <div className="recipe-modal-header">
+              <h4>{recipeItem.name}</h4>
+              <button className="recipe-modal-close" onClick={() => setRecipeItem(null)}>
+                <X size={16} />
+              </button>
+            </div>
+            {recipeItem.recipe ? (
+              <ul className="recipe-modal-list">
+                {recipeItem.recipe.split('\n').filter(Boolean).map((line, i) => (
+                  <li key={i}>{line}</li>
+                ))}
+              </ul>
+            ) : (
+              <p className="recipe-modal-empty">No recipe added yet.</p>
+            )}
+          </div>
+        </div>
       )}
 
       {/* Remove Order Confirmation Modal */}

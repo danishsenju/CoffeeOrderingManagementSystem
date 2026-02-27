@@ -26,6 +26,7 @@ function buildItemData(form) {
     name:      form.name.trim(),
     category:  form.category,
     available: form.available,
+    recipe:    form.recipe?.trim() || '',
   };
   if (form.serves === 'both') {
     return { ...base, hotPrice: parseFloat(form.hotPrice), coldPrice: parseFloat(form.coldPrice) };
@@ -48,7 +49,7 @@ function validatePrices(form) {
   return true;
 }
 
-const EMPTY_ITEM = { name: '', category: 'coffee', serves: 'both', coldPrice: '', hotPrice: '', available: true };
+const EMPTY_ITEM = { name: '', category: 'coffee', serves: 'both', coldPrice: '', hotPrice: '', available: true, recipe: '' };
 
 function MenuManager() {
   const [menuItems,       setMenuItems]       = useState([]);
@@ -128,12 +129,30 @@ function MenuManager() {
 
   // One-time seed: adds the new Matcha & Refreshing items with price 0 (unavailable until priced)
   const SEED_ITEMS = [
-    { name: 'Iced Taro Matcha',        category: 'non-coffee',  coldPrice: 0, available: false },
-    { name: 'Iced Strawberry Matcha',  category: 'non-coffee',  coldPrice: 0, available: false },
-    { name: 'Sparkling Strawberry',    category: 'refreshing',  coldPrice: 0, available: false },
-    { name: 'Sparkling Lemonade',      category: 'refreshing',  coldPrice: 0, available: false },
-    { name: 'Sparkling Green Apple',   category: 'refreshing',  coldPrice: 0, available: false },
-    { name: 'Sparkling Ribena',        category: 'refreshing',  coldPrice: 0, available: false },
+    {
+      name: 'Iced Taro Matcha', category: 'non-coffee', coldPrice: 0, available: false,
+      recipe: '4g matcha powder + 40ml hot water\n80ml milk\n30g taro powder + 40ml milk',
+    },
+    {
+      name: 'Iced Strawberry Matcha', category: 'non-coffee', coldPrice: 0, available: false,
+      recipe: '30ml strawberry syrup\n10g sugar syrup\n4g matcha powder + 40ml hot water\n120ml milk',
+    },
+    {
+      name: 'Sparkling Strawberry', category: 'refreshing', coldPrice: 0, available: false,
+      recipe: '25ml strawberry syrup\n3 pump sugar syrup\nSparkling water',
+    },
+    {
+      name: 'Sparkling Lemonade', category: 'refreshing', coldPrice: 0, available: false,
+      recipe: '4 pump lemonade syrup\nSparkling water',
+    },
+    {
+      name: 'Sparkling Green Apple', category: 'refreshing', coldPrice: 0, available: false,
+      recipe: '4 pump green apple syrup\nSparkling water',
+    },
+    {
+      name: 'Sparkling Ribena', category: 'refreshing', coldPrice: 0, available: false,
+      recipe: '5 pump ribena\nSparkling water',
+    },
   ];
 
   const seedNames = new Set(SEED_ITEMS.map(i => i.name));
@@ -328,6 +347,18 @@ function MenuManager() {
               </select>
             </div>
           </div>
+          <div className="form-row">
+            <div className="form-group form-group-full">
+              <label>Recipe / Ingredients <span className="label-hint">(one ingredient per line)</span></label>
+              <textarea
+                className="recipe-textarea"
+                value={newItem.recipe || ''}
+                onChange={e => setNewItem({ ...newItem, recipe: e.target.value })}
+                placeholder={'e.g.\n4g matcha powder + 40ml hot water\n80ml milk'}
+                rows={3}
+              />
+            </div>
+          </div>
           <button type="submit" className="add-button">
             <Plus size={16} /> Add to Menu
           </button>
@@ -397,6 +428,13 @@ function MenuManager() {
                             value={editing.name}
                             onChange={e => setEditing({ ...editing, name: e.target.value })}
                             required
+                          />
+                          <textarea
+                            className="recipe-textarea recipe-textarea-inline"
+                            value={editing.recipe || ''}
+                            onChange={e => setEditing({ ...editing, recipe: e.target.value })}
+                            placeholder="Ingredients (one per line)"
+                            rows={2}
                           />
                         </td>
                         <td>
