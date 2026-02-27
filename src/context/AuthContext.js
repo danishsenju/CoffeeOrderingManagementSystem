@@ -17,6 +17,8 @@ import { auth, db, firebaseConfig } from '../firebase/config';
 const AuthContext = createContext();
 
 const ADMIN_EMAIL = process.env.REACT_APP_ADMIN_EMAIL;
+const ROLE_KEY = 'mk_role';
+const UID_KEY  = 'mk_uid';
 
 export function useAuth() {
   return useContext(AuthContext);
@@ -51,6 +53,8 @@ export function AuthProvider({ children }) {
 
   // ── Logout ────────────────────────────────────────────────────────────────
   function logout() {
+    localStorage.removeItem(ROLE_KEY);
+    localStorage.removeItem(UID_KEY);
     return signOut(auth).then(() => setUserRole(null));
   }
 
@@ -94,10 +98,25 @@ export function AuthProvider({ children }) {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setCurrentUser(user);
       if (user) {
+        // Use cached role if UID matches — eliminates Firestore round-trip on return visits
+        const cachedUid  = localStorage.getItem(UID_KEY);
+        const cachedRole = localStorage.getItem(ROLE_KEY);
+        if (cachedUid === user.uid && cachedRole) {
+          setUserRole(cachedRole);
+          setLoading(false);
+          return;
+        }
+        // First visit or different user — resolve from Firestore then cache
         const role = await resolveRole(user);
         setUserRole(role);
+        if (role) {
+          localStorage.setItem(ROLE_KEY, role);
+          localStorage.setItem(UID_KEY, user.uid);
+        }
       } else {
         setUserRole(null);
+        localStorage.removeItem(ROLE_KEY);
+        localStorage.removeItem(UID_KEY);
       }
       setLoading(false);
     });

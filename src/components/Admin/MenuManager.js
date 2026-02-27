@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { Plus, Pencil, Trash2, UtensilsCrossed } from 'lucide-react';
 import {
   collection,
-  getDocs,
+  onSnapshot,
   doc,
   setDoc,
   addDoc,
@@ -59,19 +59,19 @@ function MenuManager() {
   const [success,         setSuccess]         = useState('');
   const [activeCategory,  setActiveCategory]  = useState('all');
   const [priceType,       setPriceType]       = useState('both');
+  const [seeding,         setSeeding]         = useState(false);
 
-  useEffect(() => { fetchMenuItems(); }, []);
-
-  async function fetchMenuItems() {
-    setLoading(true);
-    try {
-      const snap = await getDocs(collection(db, 'menu'));
+  // Real-time menu listener — serves from cache instantly, auto-updates on changes
+  useEffect(() => {
+    const unsubscribe = onSnapshot(collection(db, 'menu'), (snap) => {
       setMenuItems(snap.docs.map(d => ({ id: d.id, ...d.data() })));
-    } catch (err) {
+      setLoading(false);
+    }, (err) => {
       setError('Failed to fetch menu items: ' + err.message);
-    }
-    setLoading(false);
-  }
+      setLoading(false);
+    });
+    return () => unsubscribe();
+  }, []);
 
   async function handleAddItem(e) {
     e.preventDefault();
@@ -84,7 +84,6 @@ function MenuManager() {
       await addDoc(collection(db, 'menu'), buildItemData(newItem));
       const added = newItem.name;
       setNewItem(EMPTY_ITEM);
-      fetchMenuItems();
       setError('');
       setSuccess(`${added} added successfully!`);
       setTimeout(() => setSuccess(''), 3000);
@@ -105,7 +104,6 @@ function MenuManager() {
       await setDoc(doc(db, 'menu', editing.id), buildItemData(editing));
       const updatedName = editing.name;
       setEditing(null);
-      fetchMenuItems();
       setError('');
       setSuccess(`${updatedName} updated successfully!`);
       setTimeout(() => setSuccess(''), 3000);
@@ -119,7 +117,6 @@ function MenuManager() {
     if (window.confirm(`Are you sure you want to delete "${name}"?`)) {
       try {
         await deleteDoc(doc(db, 'menu', id));
-        fetchMenuItems();
         setSuccess(`${name} removed from menu.`);
         setTimeout(() => setSuccess(''), 3000);
       } catch (err) {
@@ -127,6 +124,33 @@ function MenuManager() {
         setSuccess('');
       }
     }
+  }
+
+  // One-time seed: adds the new Matcha & Refreshing items with price 0 (unavailable until priced)
+  const SEED_ITEMS = [
+    { name: 'Iced Taro Matcha',        category: 'non-coffee',  coldPrice: 0, available: false },
+    { name: 'Iced Strawberry Matcha',  category: 'non-coffee',  coldPrice: 0, available: false },
+    { name: 'Sparkling Strawberry',    category: 'refreshing',  coldPrice: 0, available: false },
+    { name: 'Sparkling Lemonade',      category: 'refreshing',  coldPrice: 0, available: false },
+    { name: 'Sparkling Green Apple',   category: 'refreshing',  coldPrice: 0, available: false },
+    { name: 'Sparkling Ribena',        category: 'refreshing',  coldPrice: 0, available: false },
+  ];
+
+  const seedNames = new Set(SEED_ITEMS.map(i => i.name));
+  const alreadySeeded = menuItems.some(i => seedNames.has(i.name));
+
+  async function handleSeedItems() {
+    setSeeding(true);
+    try {
+      await Promise.all(
+        SEED_ITEMS.map(item => addDoc(collection(db, 'menu'), { ...item, price: 0 }))
+      );
+      setSuccess('6 items added! Set their prices below then mark them Available.');
+      setTimeout(() => setSuccess(''), 6000);
+    } catch (err) {
+      setError('Seed failed: ' + err.message);
+    }
+    setSeeding(false);
   }
 
   function startEditing(item) {
@@ -222,6 +246,23 @@ function MenuManager() {
       {error   && <div className="error-message">{error}</div>}
       {success && <div className="success-message">{success}</div>}
 
+      {/* One-time seed button — hidden once items are already in menu */}
+      {!alreadySeeded && (
+        <div className="seed-banner">
+          <div className="seed-banner-text">
+            <strong>New items available to add:</strong> Iced Taro Matcha, Iced Strawberry Matcha &amp; 4 Sparkling drinks.
+            They will be added as <em>unavailable</em> — set their prices then mark them Available.
+          </div>
+          <button
+            className="seed-btn"
+            onClick={handleSeedItems}
+            disabled={seeding}
+          >
+            {seeding ? 'Adding…' : '+ Add 6 New Items'}
+          </button>
+        </div>
+      )}
+
       {/* ── Add new item form ── */}
       <div className="add-item-section">
         <div className="section-header">
@@ -253,6 +294,7 @@ function MenuManager() {
                 <option value="food">Food</option>
                 <option value="dessert">Dessert</option>
                 <option value="tea">Tea</option>
+                <option value="refreshing">Refreshing</option>
                 <option value="other">Other</option>
               </select>
             </div>
